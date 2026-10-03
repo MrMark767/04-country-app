@@ -2,22 +2,19 @@ import type { Country } from '../interfaces/country.interface';
 import type { RESTCountry } from '../interfaces/rest-countries.interface';
 
 export class CountryMapper {
-  // static RestCountry => Country
   static mapRestCountryToCountry(restCountry: RESTCountry): Country {
     return {
-      capital: restCountry.capital.join(','),
+      capital: restCountry.capital?.join(', ') ?? 'Sin capital',
       cca2: restCountry.cca2,
-      flag: restCountry.flag,
-      flagSvg: restCountry.flags.svg,
-      name: restCountry.translations['spa'].common ?? 'No Spanish Name',
-      population: restCountry.population,
-
-      region: restCountry.region,
-      subRegion: restCountry.subregion,
+      flag: restCountry.flag ?? '',
+      flagSvg: restCountry.flags?.svg ?? restCountry.flags?.png ?? '',
+      name: restCountry.translations?.['spa']?.common ?? restCountry.name?.common ?? 'No Name',
+      population: restCountry.population ?? 0,
+      region: restCountry.region ?? '',
+      subRegion: restCountry.subregion ?? '',
     };
   }
 
-  // static RestCountry[] => Country[]
   static mapRestCountryArrayToCountryArray(
     restCountries: RESTCountry[]
   ): Country[] {
