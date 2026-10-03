@@ -23,9 +23,15 @@ export class CountryService {
 
   private getAllCountries(): Observable<RESTCountry[]> {
     if (!this.allCountries$) {
-      this.allCountries$ = this.http.get<RESTCountry[]>(`${API_URL}/all`).pipe(
-        shareReplay(1)
-      );
+      this.allCountries$ = this.http
+        .get<RESTCountry[]>('/data/countries.json')
+        .pipe(
+          catchError((err) => {
+            console.warn('Local countries.json fallback to remote API:', err);
+            return this.http.get<RESTCountry[]>(`${API_URL}/all`);
+          }),
+          shareReplay(1)
+        );
     }
     return this.allCountries$;
   }

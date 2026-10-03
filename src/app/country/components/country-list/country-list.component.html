@@ -37,25 +37,27 @@
 
       } @if (errorMessage()) {
       <tr>
-        <td colspan="8" class="text-center">
+        <td colspan="8" class="text-center text-error">
           {{ errorMessage() }}
         </td>
       </tr>
       }
 
-      <!--  -->
-      @if(countries().length === 0 && !isLoading()) {
+      @if(isEmpty() && !isLoading() && !errorMessage()) {
       <tr>
-        <td colspan="8" class="text-center">No se encontraron resultados</td>
+        <td colspan="8" class="text-center text-warning">
+          No se encontraron resultados para esta búsqueda
+        </td>
       </tr>
       }
 
-      <!--  -->
       @if (isLoading()) {
       <tr>
-        <td colspan="8" class="text-center">Buscando países</td>
+        <td colspan="8" class="text-center">
+          <span class="loading loading-spinner loading-md align-middle mr-2"></span>
+          Buscando países...
+        </td>
       </tr>
-
       }
     </tbody>
   </table>
