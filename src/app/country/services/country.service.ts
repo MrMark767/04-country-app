@@ -8,6 +8,12 @@ import { CountryMapper } from '../mappers/country.mapper';
 
 const API_URL = 'https://studies.cs.helsinki.fi/restcountries/api';
 
+const normalize = (str: string) =>
+  str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
 @Injectable({
   providedIn: 'root',
 })
@@ -25,18 +31,23 @@ export class CountryService {
   }
 
   searchByCapital(query: string): Observable<Country[]> {
-    query = query.toLowerCase().trim();
-    if (!query) return of([]);
+    const rawQuery = query.toLowerCase().trim();
+    const cleanQuery = normalize(query.trim());
+    if (!cleanQuery) return of([]);
 
     return this.getAllCountries().pipe(
       map((countries) =>
         countries.filter((c) =>
-          c.capital?.some((cap) => cap.toLowerCase().includes(query))
+          c.capital?.some(
+            (cap) =>
+              cap.toLowerCase().includes(rawQuery) ||
+              normalize(cap).includes(cleanQuery)
+          )
         )
       ),
       map((resp) => CountryMapper.mapRestCountryArrayToCountryArray(resp)),
       catchError((error) => {
-        console.log('Error fetching ', error);
+        console.error('Error fetching countries by capital:', error);
 
         return throwError(
           () => new Error(`No se pudo obtener países con ese query ${query}`)
@@ -46,22 +57,29 @@ export class CountryService {
   }
 
   searchByCountry(query: string): Observable<Country[]> {
-    query = query.toLowerCase().trim();
-    if (!query) return of([]);
+    const rawQuery = query.toLowerCase().trim();
+    const cleanQuery = normalize(query.trim());
+    if (!cleanQuery) return of([]);
 
     return this.getAllCountries().pipe(
       map((countries) =>
         countries.filter(
           (c) =>
-            c.name.common.toLowerCase().includes(query) ||
-            c.name.official.toLowerCase().includes(query) ||
-            c.translations?.['spa']?.common?.toLowerCase().includes(query) ||
-            c.translations?.['spa']?.official?.toLowerCase().includes(query)
+            c.name.common.toLowerCase().includes(rawQuery) ||
+            normalize(c.name.common).includes(cleanQuery) ||
+            c.name.official.toLowerCase().includes(rawQuery) ||
+            normalize(c.name.official).includes(cleanQuery) ||
+            c.translations?.['spa']?.common?.toLowerCase().includes(rawQuery) ||
+            (c.translations?.['spa']?.common &&
+              normalize(c.translations['spa'].common).includes(cleanQuery)) ||
+            c.translations?.['spa']?.official?.toLowerCase().includes(rawQuery) ||
+            (c.translations?.['spa']?.official &&
+              normalize(c.translations['spa'].official).includes(cleanQuery))
         )
       ),
       map((resp) => CountryMapper.mapRestCountryArrayToCountryArray(resp)),
       catchError((error) => {
-        console.log('Error fetching ', error);
+        console.error('Error fetching countries by name:', error);
 
         return throwError(
           () => new Error(`No se pudo obtener países con ese query ${query}`)
@@ -71,22 +89,22 @@ export class CountryService {
   }
 
   searchCountryByAlphaCode(code: string): Observable<Country | undefined> {
-    code = code.toLowerCase().trim();
+    const cleanCode = code.toLowerCase().trim();
 
     return this.getAllCountries().pipe(
       map((countries) =>
         countries.find(
           (c) =>
-            c.cca2.toLowerCase() === code ||
-            c.cca3?.toLowerCase() === code ||
-            c.cioc?.toLowerCase() === code
+            c.cca2.toLowerCase() === cleanCode ||
+            c.cca3?.toLowerCase() === cleanCode ||
+            c.cioc?.toLowerCase() === cleanCode
         )
       ),
       map((country) =>
         country ? CountryMapper.mapRestCountryToCountry(country) : undefined
       ),
       catchError((error) => {
-        console.log('Error fetching ', error);
+        console.error('Error fetching country by alpha code:', error);
 
         return throwError(
           () => new Error(`No se pudo obtener países con ese código ${code}`)
@@ -96,16 +114,18 @@ export class CountryService {
   }
 
   searchByRegion(region: string): Observable<Country[]> {
-    region = region.toLowerCase().trim();
-    if (!region) return of([]);
+    const cleanRegion = normalize(region.trim());
+    if (!cleanRegion) return of([]);
 
     return this.getAllCountries().pipe(
       map((countries) =>
-        countries.filter((c) => c.region?.toLowerCase() === region)
+        countries.filter(
+          (c) => c.region && normalize(c.region) === cleanRegion
+        )
       ),
       map((resp) => CountryMapper.mapRestCountryArrayToCountryArray(resp)),
       catchError((error) => {
-        console.log('Error fetching ', error);
+        console.error('Error fetching countries by region:', error);
 
         return throwError(
           () => new Error(`No se pudo obtener países con esa región ${region}`)
