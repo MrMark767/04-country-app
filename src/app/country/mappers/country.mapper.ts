@@ -5,15 +5,15 @@ export class CountryMapper {
   // static RestCountry => Country
   static mapRestCountryToCountry(restCountry: RESTCountry): Country {
     return {
-      capital: restCountry.capital.join(','),
+      capital: restCountry.capital?.join(', ') ?? 'Sin capital',
       cca2: restCountry.cca2,
-      flag: restCountry.flag,
-      flagSvg: restCountry.flags.svg,
-      name: restCountry.translations['spa'].common ?? 'No Spanish Name',
-      population: restCountry.population,
+      flag: restCountry.flag ?? '',
+      flagSvg: restCountry.flags?.svg ?? restCountry.flags?.png ?? '',
+      name: restCountry.translations['spa']?.common ?? restCountry.name?.common ?? 'Sin nombre',
+      population: restCountry.population ?? 0,
 
       region: restCountry.region,
-      subRegion: restCountry.subregion,
+      subRegion: restCountry.subregion ?? 'Sin subregión',
     };
   }
 
@@ -21,6 +21,6 @@ export class CountryMapper {
   static mapRestCountryArrayToCountryArray(
     restCountries: RESTCountry[]
   ): Country[] {
-    return restCountries.map(this.mapRestCountryToCountry);
+    return restCountries.map((c) => CountryMapper.mapRestCountryToCountry(c));
   }
 }
