@@ -2,9 +2,10 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 
 import { RESTCountry } from '../interfaces/rest-countries.interface';
-import { map, Observable, catchError, throwError, of, shareReplay } from 'rxjs';
+import { map, Observable, catchError, throwError, of, shareReplay, tap } from 'rxjs';
 import type { Country } from '../interfaces/country.interface';
 import { CountryMapper } from '../mappers/country.mapper';
+import { Region } from '../interfaces/region.type';
 
 const API_URL = 'https://studies.cs.helsinki.fi/restcountries/api';
 
@@ -20,6 +21,10 @@ const normalize = (str: string) =>
 export class CountryService {
   private http = inject(HttpClient);
   private allCountries$?: Observable<RESTCountry[]>;
+
+  private queryCacheCapital = new Map<string, Country[]>();
+  private queryCacheCountry = new Map<string, Country[]>();
+  private queryCacheRegion = new Map<Region, Country[]>();
 
   private getAllCountries(): Observable<RESTCountry[]> {
     if (!this.allCountries$) {
@@ -41,6 +46,10 @@ export class CountryService {
     const cleanQuery = normalize(query.trim());
     if (!cleanQuery) return of([]);
 
+    if (this.queryCacheCapital.has(rawQuery)) {
+      return of(this.queryCacheCapital.get(rawQuery) ?? []);
+    }
+
     return this.getAllCountries().pipe(
       map((countries) =>
         countries.filter((c) =>
@@ -52,6 +61,7 @@ export class CountryService {
         )
       ),
       map((resp) => CountryMapper.mapRestCountryArrayToCountryArray(resp)),
+      tap((countries) => this.queryCacheCapital.set(rawQuery, countries)),
       catchError((error) => {
         console.error('Error fetching countries by capital:', error);
 
@@ -66,6 +76,10 @@ export class CountryService {
     const rawQuery = query.toLowerCase().trim();
     const cleanQuery = normalize(query.trim());
     if (!cleanQuery) return of([]);
+
+    if (this.queryCacheCountry.has(rawQuery)) {
+      return of(this.queryCacheCountry.get(rawQuery) ?? []);
+    }
 
     return this.getAllCountries().pipe(
       map((countries) =>
@@ -84,6 +98,7 @@ export class CountryService {
         )
       ),
       map((resp) => CountryMapper.mapRestCountryArrayToCountryArray(resp)),
+      tap((countries) => this.queryCacheCountry.set(rawQuery, countries)),
       catchError((error) => {
         console.error('Error fetching countries by name:', error);
 
@@ -119,9 +134,12 @@ export class CountryService {
     );
   }
 
-  searchByRegion(region: string): Observable<Country[]> {
-    const cleanRegion = normalize(region.trim());
-    if (!cleanRegion) return of([]);
+  searchByRegion(region: Region): Observable<Country[]> {
+    if (this.queryCacheRegion.has(region)) {
+      return of(this.queryCacheRegion.get(region) ?? []);
+    }
+
+    const cleanRegion = normalize(region);
 
     return this.getAllCountries().pipe(
       map((countries) =>
@@ -130,6 +148,7 @@ export class CountryService {
         )
       ),
       map((resp) => CountryMapper.mapRestCountryArrayToCountryArray(resp)),
+      tap((countries) => this.queryCacheRegion.set(region, countries)),
       catchError((error) => {
         console.error('Error fetching countries by region:', error);
 
